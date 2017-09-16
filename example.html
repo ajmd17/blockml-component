@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html, body {
+        background: #eee;
+      }
+      .page {
+        padding: 50px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script src="node_modules/blockml/token.js"></script>
+    <script src="node_modules/blockml/lexer.js"></script>
+    <script src="node_modules/blockml/empty-node.js"></script>
+    <script src="node_modules/blockml/block-node.js"></script>
+    <script src="node_modules/blockml/string-node.js"></script>
+    <script src="node_modules/blockml/attribute-node.js"></script>
+    <script src="node_modules/blockml/comment-node.js"></script>
+    <script src="node_modules/blockml/parser.js"></script>
+    <script src="node_modules/blockml/index.js"></script>
+
+    <script src="vdom.js"></script>
+    <script src="index.js"></script>
+
+    <script type="text/javascript">
+      component('Page', {
+        render: function (props, children) {
+          return blockml`
+            div class: "page" {
+              ${children}
+            }
+          `;
+        }
+      });
+
+      component('App', {
+        create: function () {
+        },
+
+        render: function (props, children) {
+          return blockml`
+            Page {
+              h1 {
+                "Hello World"
+              }
+              ${children}
+            }
+          `;
+        }
+      });
+
+      document.getElementById('app').innerHTML = blockml.render(`
+        App name: "my app" {
+          p {
+            "Hello, I am a child element that will be passed down."
+          }
+        }
+      `);
+    </script>
+  </body>
+</html>

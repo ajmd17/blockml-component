@@ -14,6 +14,6 @@ function component (name, obj) {
   return VDOM.register(name, obj);
 };
 
-if (typeof module.exports === 'object') {
+if (typeof module === 'object') {
   module.exports = component;
 }

@@ -14,6 +14,18 @@ function component (name, obj) {
   return VDOM.register(name, obj);
 };
 
+/**
+ * Turns an object into one that can be embedded in a component,
+ * and can be used to refresh the state when changed.
+ */
+component.bind = function (thisArg, prop) {
+  if (typeof prop === 'function') {
+    return VDOM.bindEvent(thisArg || null, prop);
+  } else {
+    return prop;
+  }
+};
+
 if (typeof module === 'object') {
   module.exports = component;
 }

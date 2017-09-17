@@ -2,6 +2,11 @@ if (typeof require === 'function') {
   var blockml = require('blockml');
 }
 
+var COMPONENT_METHODS = [
+  'render',
+  'create'
+];
+
 /**
  * @typedef {{ create: Function, render: Function }} Component
  */
@@ -50,14 +55,46 @@ blockml.registerCustomAttributeHandler(function (attributeNode) {
     // do not apply attribute.
     return null;
   }
-  
+
   return attributeNode;
 });
+
+/**
+ * @param {Number} eventId 
+ */
+function BoundEvent(eventId) {
+  this.eventId = eventId;
+}
+
+BoundEvent.prototype.toString = function () {
+  // for 'onclick' etc. handlers on elements
+  return 'VDOM._events[' + this.eventId + ']()';
+};
 
 var VDOM = {
   _cachedComponents: {},
   _cachedChildren: [],
+
+  BoundEvent: BoundEvent,
+
+  /** @type {BoundEvent[]} */
   _events: [],
+
+  /**
+   * Bind a function as an event. Returns a BoundEvent object,
+   * which upon conversion to string will yield something that can be used in
+   * HTML on* attributes.
+   * @param {*} thisArg
+   * @param {Function} fn
+   * @returns {BoundEvent}
+   */
+  bindEvent: function (thisArg, fn) {
+    var index = VDOM._events.push(function () {
+      fn.apply(thisArg);
+    }) - 1;
+
+    return new BoundEvent(index);
+  },
 
   /**
    * @param {String} name
@@ -72,10 +109,16 @@ var VDOM = {
       if (typeof node._props === 'undefined') {
         node._props = {};
 
-        // copy defined properties on object that are not methods to the props object
+        // copy defined properties on object that are not methods to the props object.
+        // methods will be stored, and the properties set to an object that converts to a string that will indicate which event to use
         for (var key in obj) {
           if (obj.hasOwnProperty(key)) {
-            if (typeof obj[key] !== 'function') {
+            if (typeof obj[key] === 'function') {
+              // do not bind 'render', 'create', etc.
+              if (COMPONENT_METHODS.indexOf(key) === -1) {
+                obj[key] = VDOM.bindEvent(obj, obj[key]);
+              }
+            } else {
               node._props[key] = obj[key];
             }
           }

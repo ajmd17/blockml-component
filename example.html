@@ -44,15 +44,26 @@
         create: function () {
         },
 
+        destroy: function () {
+        },
+
         render: function (props, children) {
           return `
             Page {
-              h1 @click: "CLICK" {
+              h1 onclick: "${this.handleClick}" {
                 "Hello World"
+              }
+              br;
+              button onclick: "${component.bind(this, this.handleClick)}" {
+                "Click ME"
               }
               ${children}
             }
           `;
+        },
+
+        onLoad: function() {
+
         },
 
         handleClick: function (event) {
@@ -64,6 +75,7 @@
         App name: "my app" {
           p {
             "Hello, I am a child element that will be passed down."
+            br;
           }
         }
       `;

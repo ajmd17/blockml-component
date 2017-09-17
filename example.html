@@ -32,7 +32,7 @@
     <script type="text/javascript">
       component('Page', {
         render: function (props, children) {
-          return blockml`
+          return `
             div class: "page" {
               ${children}
             }
@@ -45,24 +45,41 @@
         },
 
         render: function (props, children) {
-          return blockml`
+          return `
             Page {
-              h1 {
+              h1 @click: "CLICK" {
                 "Hello World"
               }
               ${children}
             }
           `;
+        },
+
+        handleClick: function (event) {
+          console.log('click', this, event);
         }
       });
 
-      document.getElementById('app').innerHTML = blockml.render(`
+      var input = `
         App name: "my app" {
           p {
             "Hello, I am a child element that will be passed down."
           }
         }
-      `);
+      `;
+
+      blockml.createDOMNodes(input, function (errors, result) {
+        console.log({result})
+        document.getElementById('app').appendChild(result);
+      });
+
+      /*document.getElementById('app').innerHTML = blockml.render(`
+        App name: "my app" {
+          p {
+            "Hello, I am a child element that will be passed down."
+          }
+        }
+      `);*/
     </script>
   </body>
 </html>

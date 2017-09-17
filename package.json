@@ -9,6 +9,6 @@
   "author": "Andrew MacDonald <andrewmacdonald971@gmail.com> (http://bidsquid.ca)",
   "license": "ISC",
   "dependencies": {
-    "blockml": "0.0.5-alpha"
+    "blockml": "0.0.8-alpha"
   }
 }

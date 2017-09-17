@@ -43,5 +43,5 @@ var html = blockml.render(`
       }
     }
   }
-`));
+`);
 ```

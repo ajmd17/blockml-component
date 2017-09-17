@@ -1,11 +1,11 @@
 if (typeof require === 'function') {
   var blockml = require('blockml');
-  var component = require('./index');
+  blockml.component = require('./index');
 }
 
-component('Page', {
+blockml.component('Page', {
   render: function (props, children) {
-    return blockml`
+    return `
       div {
         ${children}
       }
@@ -13,12 +13,12 @@ component('Page', {
   }
 });
 
-component('App', {
+blockml.component('App', {
   create: function () {
   },
 
   render: function (props, children) {
-    return blockml`
+    return `
       html {
         head;
         body {
@@ -27,7 +27,7 @@ component('App', {
               "Hello World"
             }
             div {
-              "My name is: "
+              "My name is: " "${props.name}"
             }
             ${children}
           }
@@ -39,7 +39,7 @@ component('App', {
 
 
 console.log(blockml.render(`
-  App {
+  App name: 'myapp', test: 'test' {
     h1 {
       "Hello"
     }

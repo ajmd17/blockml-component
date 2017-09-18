@@ -2,7 +2,7 @@ if (typeof require === 'function') {
   var VDOM = require('./vdom');
 }
 
-function component (name, obj) {
+function component(name, obj) {
   if (typeof name !== 'string') {
     throw new TypeError('first argument should be a string');
   }

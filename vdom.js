@@ -60,15 +60,99 @@ blockml.registerCustomAttributeHandler(function (attributeNode) {
 });
 
 /**
- * @param {Number} eventId 
+ * @param {Number} eventIndex
+ * @param {Number} propsIndex
  */
-function BoundEvent(eventId) {
-  this.eventId = eventId;
+function BoundEvent(eventIndex, propsIndex) {
+  this.eventIndex = eventIndex;
+  this.propsIndex = propsIndex;
 }
 
 BoundEvent.prototype.toString = function () {
   // for 'onclick' etc. handlers on elements
-  return 'VDOM._events[' + this.eventId + ']()';
+  return 'VDOM._events[' + this.eventIndex + ']()';
+};
+
+/**
+ * @param {Object} [schema]
+ */
+function PropsObject(schema) { // TODO add a way of validating props against schema
+  this._props = {};
+  this._lastProps = {};
+  this._schema = schema || {};
+}
+
+PropsObject.prototype.get = function (key) {
+  return this._props[key];
+};
+
+/**
+ * @param {String} key
+ * @param {*} value
+ * @param {Boolean} [markDirty=true]
+ */
+PropsObject.prototype.set = function (key, value, markDirty) {
+  if (markDirty === undefined) {
+    markDirty = true;
+  }
+
+  this._props[key] = value;
+
+  if (!markDirty) {
+    // save on last props
+    this._lastProps[key] = value;
+  }
+
+  return this;
+};
+
+PropsObject.prototype.getCurrentProperties = function () {
+  console.log('this = ', this);
+  return this._props;
+};
+
+/**
+ * Merge in new props into the current one.
+ * Does not set 'undefined' values in the new props object.
+ * @param {Object} props
+ * @returns {PropsObject}
+ */
+PropsObject.prototype.merge = function (obj) {
+  if (typeof obj !== 'undefined') {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key) && obj[key] !== undefined) {
+        this._props[key] = obj[key];
+      }
+    }
+  }
+
+  return this;
+};
+
+PropsObject.prototype.checkIsDirty = function () {
+  for (var key in this._props) {
+    if (Object.prototype.hasOwnProperty.call(this._props, key)) {
+      if (typeof this._lastProps[key] === 'undefined') {
+        return true; // dirty - property added
+      }
+
+      if (this._props[key] !== this._lastProps[key]) {
+        return true; // different
+      }
+    }
+  }
+
+  return false;
+};
+
+PropsObject.prototype.syncLastProps = function () {
+  // NOTE: no need to delete extra props in _lastProps,
+  // as _lastProps isn't iterated through in checkIsDirty(), only _props is.
+  for (var key in this._props) {
+    if (Object.prototype.hasOwnProperty.call(this._props, key)) {
+      this._lastProps[key] = this._props[key];
+    }
+  }
 };
 
 var VDOM = {
@@ -80,20 +164,30 @@ var VDOM = {
   /** @type {BoundEvent[]} */
   _events: [],
 
+  /** @type {PropsObject[]} */
+  _storedProps: [],
+
   /**
    * Bind a function as an event. Returns a BoundEvent object,
    * which upon conversion to string will yield something that can be used in
    * HTML on* attributes.
    * @param {*} thisArg
    * @param {Function} fn
+   * @param {PropsObject} propsObj
    * @returns {BoundEvent}
    */
-  bindEvent: function (thisArg, fn) {
-    var index = VDOM._events.push(function () {
-      fn.apply(thisArg);
+  bindEvent: function (thisArg, fn, propsObj) {
+    var eventIndex = VDOM._events.push(function () {
+      fn.call(thisArg, window.event, propsObj.getCurrentProperties());
+
+      // check if props have been modified.
+      if (propsObj.checkIsDirty()) {
+        // refresh component
+        propsObj.syncLastProps();
+      }
     }) - 1;
 
-    return new BoundEvent(index);
+    return new BoundEvent(eventIndex);
   },
 
   /**
@@ -107,7 +201,7 @@ var VDOM = {
 
     function createPropsForNode(node) {
       if (typeof node._props === 'undefined') {
-        node._props = {};
+        var propsObject = new PropsObject();
 
         // copy defined properties on object that are not methods to the props object.
         // methods will be stored, and the properties set to an object that converts to a string that will indicate which event to use
@@ -116,10 +210,10 @@ var VDOM = {
             if (typeof obj[key] === 'function') {
               // do not bind 'render', 'create', etc.
               if (COMPONENT_METHODS.indexOf(key) === -1) {
-                obj[key] = VDOM.bindEvent(obj, obj[key]);
+                obj[key] = VDOM.bindEvent(obj, obj[key], propsObject);
               }
             } else {
-              node._props[key] = obj[key];
+              propsObject.set(key, obj[key], false);
             }
           }
         }
@@ -127,9 +221,11 @@ var VDOM = {
         // copy attributes over to props - this will overwrite default props as expected.
         for (var i = 0; i < node.attributes.length; i++) {
           // 'value.value' is because AttributeNode's value is a StringNode.
-          node._props[node.attributes[i].name] = node.attributes[i].value.value;
+          propsObject.set([node.attributes[i].name], node.attributes[i].value.value, false);
         }
       }
+
+      node._props = propsObject.getCurrentProperties();
     }
 
     function renderChildrenPlaceholder(node) {

@@ -1,6 +1,6 @@
 if (typeof require === 'function') {
   var blockml = require('blockml');
-  blockml.component = require('./index');
+  blockml.component = require('../');
 }
 
 blockml.component('Page', {
@@ -23,7 +23,7 @@ blockml.component('App', {
         head;
         body {
           Page {
-            h1 {
+            h1 onclick: "${this._handleClick}" {
               "Hello World"
             }
             div {
@@ -34,6 +34,11 @@ blockml.component('App', {
         }
       }
     `;
+  },
+
+  _handleClick: function (event, props) {
+    console.log('Click h1.');
+    
   }
 });
 
